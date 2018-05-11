@@ -24,8 +24,8 @@ String cmd = "";           // Gather a new AT command to this string from serial
 bool cmdMode = true;       // Are we in AT command mode or connected mode
 bool telnet = true;        // Is telnet control code handling enabled
 #define SWITCH_PIN 0       // GPIO0 (programmind mode pin)
-#define DEFAULT_BPS 115200 // 2400 safe for all old computers including C64
-//#define USE_SWITCH 1     // Use a software reset switch
+#define DEFAULT_BPS 2400 // 2400 safe for all old computers including C64
+//#define USE_SWITCH 1     // Use a   ware reset switch
 //#define DEBUG 1          // Print additional debug information to serial channel
 #undef DEBUG
 #undef USE_SWITCH
@@ -466,7 +466,9 @@ void loop()
       else
       {
         // Non-control codes pass through freely
-        Serial.write(rxByte); Serial.flush();
+        Serial.write(rxByte); 
+        delay(1);
+        Serial.flush();
       }
     }
   }
