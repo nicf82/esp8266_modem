@@ -19,38 +19,44 @@
 #include <ESP8266WiFi.h>
 #include <algorithm>
 
-// Global variables
-String cmd = "";           // Gather a new AT command to this string from serial
-bool cmdMode = true;       // Are we in AT command mode or connected mode
-bool telnet = true;        // Is telnet control code handling enabled
-#define SWITCH_PIN 0       // GPIO0 (programmind mode pin)
-#define DEFAULT_BPS 2400 // 2400 safe for all old computers including C64
+//#defines
+
 //#define USE_SWITCH 1     // Use a   ware reset switch
 //#define DEBUG 1          // Print additional debug information to serial channel
 #undef DEBUG
 #undef USE_SWITCH
+#define SWITCH_PIN 0       // GPIO0 (programmind mode pin)
+#define DEFAULT_BPS 2400 // 2400 safe for all old computers including C64
 #define LISTEN_PORT 23     // Listen to this if not connected. Set to zero to disable.
 #define RING_INTERVAL 3000 // How often to print RING when having a new incoming connection (ms)
-WiFiClient tcpClient;
-WiFiServer tcpServer(LISTEN_PORT);
-unsigned long lastRingMs=0;// Time of last "RING" message (millis())
-long myBps;                // What is the current BPS setting
 #define MAX_CMD_LENGTH 256 // Maximum length for AT command
-char plusCount = 0;        // Go to AT mode at "+++" sequence, that has to be counted
-unsigned long plusTime = 0;// When did we last receive a "+++" sequence
 #define LED_PIN 2          // Status LED
 #define LED_TIME 1         // How many ms to keep LED on at activity
-unsigned long ledTime = 0;
 #define TX_BUF_SIZE 256    // Buffer where to read from serial before writing to TCP
                            // (that direction is very blocking by the ESP TCP stack,
                            // so we can't do one byte a time.)
-uint8_t txBuf[TX_BUF_SIZE];
-
 // Telnet codes
 #define DO 0xfd
 #define WONT 0xfc
 #define WILL 0xfb
-#define DONT 0xfe
+#define DONT 0xfe                           
+
+// Global variables
+
+WiFiClient tcpClient;
+WiFiServer tcpServer(LISTEN_PORT);
+
+String cmd = "";           // Gather a new AT command to this string from serial
+bool cmdMode = true;       // Are we in AT command mode or connected mode
+bool telnet = true;        // Is telnet control code handling enabled
+
+unsigned long lastRingMs=0;// Time of last "RING" message (millis())
+long myBps;                // What is the current BPS setting
+char plusCount = 0;        // Go to AT mode at "+++" sequence, that has to be counted
+unsigned long plusTime = 0;// When did we last receive a "+++" sequence
+unsigned long ledTime = 0; // Counter for LED flashing
+uint8_t txBuf[TX_BUF_SIZE]; // Transmit Buffer
+
 
 /**
  * Arduino main init function
