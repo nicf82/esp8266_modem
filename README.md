@@ -8,7 +8,7 @@ Getting Started with the BBC Micro
 ----------------------------------
 You will need:
 1x LoLin NodeMCU board with an ESP12E module on it 
-1x MAX232 level shifter board - not just the IC on its own! 
+1x MAX3232 level shifter board - not just the IC on its own! 
 1x Domino plug for the beeb's serial...
 Some wire for wiring things together.
 
@@ -29,7 +29,7 @@ Next step is to hook this up to the BBC/Master.
 On the domino plug, looking at the solder side, join pins 5/2 (RTS/CTS), and take lines from GND (centre pin 1), RD (4) and TD (3).
 Take TD to the TxD pin on your level shifter and RD to the RxD pin, and GND to GND.
 
-On the other side, the MAX232 will need 5V from somewhere and you can bring the GND from it out to attach to the LoLin board... 
+On the other side, the MAX3232 will need 3.3V from somewhere and you can bring the GND from it out to attach to the LoLin board... 
 
 Connect the TxD output to the TX pin on the LoLin board, and the RxD output to the RX pin of the LoLin board, GND to G, and then it's up to you to choose how to power the LoLin board - you can take 5V and feed that to the VIN pin, or you can just use a USB adapter and power it through that. Entirely up to you. JUST DON'T FEED 5V TO ONE OF THE PINS MARKED 3V! YOU WILL FRY YOUR BOARD!
 
