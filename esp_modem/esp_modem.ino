@@ -21,6 +21,12 @@
 
 //#defines
 
+#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control
+
+#ifdef USE_HW_FLOW_CTRL
+#include <uart_register.h>
+#endif
+
 //#define USE_SWITCH 1     // Use a   ware reset switch
 //#define DEBUG 1          // Print additional debug information to serial channel
 #undef DEBUG
@@ -63,6 +69,20 @@ uint8_t txBuf[TX_BUF_SIZE]; // Transmit Buffer
  */
 void setup()
 {
+#ifdef USE_HW_FLOW_CTRL
+  // Enable flow control of Beeb -> ESP8266 data with RTS
+  // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
+  // RTS on the ESP8266 is an output and should be connected to CTS on the RS423
+  // The ESP8266 has a 128 byte receive buffer, so a threshold of 64 is half full
+  PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, FUNC_U0RTS);
+  SET_PERI_REG_BITS(UART_CONF1(0), UART_RX_FLOW_THRHD, 64, UART_RX_FLOW_THRHD_S);
+  SET_PERI_REG_MASK(UART_CONF1(0), UART_RX_FLOW_EN);
+  // Enable flow control of ESP8266 -> Beeb data with CTS
+  // CTS on the EPS8266 is pin GPIO13 which is physical pin 7
+  // CTS on the ESP8266 is an input and should be connected to RTS on the RS423
+  PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, FUNC_UART0_CTS);
+  SET_PERI_REG_MASK(UART_CONF0(0), UART_TX_FLOW_EN);
+#endif
   Serial.begin(DEFAULT_BPS);
   myBps = DEFAULT_BPS;
 
