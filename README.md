@@ -1,7 +1,11 @@
 Virtual modem for ESP8266
 =========================
 
-Copyright (C) 2015 Jussi Salin <salinjus@gmail.com> under GPLv3 license.
+Schematic Copyright (C) 2018 Daniel Jameson <djameson@gmail.com>
+PCB Copyright (C) 2018 Daniel Jameson <djameson@gmail.com>
+Schematic and PCB released under Creative Commons Attribution-ShareAlike 4.0 License: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+
+Firmware Copyright (C) 2015 Jussi Salin <salinjus@gmail.com> under GPLv3 license.
 additions Copyright (C) 2018 Daniel Jameson <djameson@gmail.com> under GPLv3 license.
 
 Getting Started with the BBC Micro
