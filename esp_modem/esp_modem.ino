@@ -21,7 +21,8 @@
 
 //#defines
 
-#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control
+//#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - off by default, uncomment this line to use and then
+#undef USE_HW_FLOW_CTRL      // comment out this line!
 
 #ifdef USE_HW_FLOW_CTRL
 #include <uart_register.h>

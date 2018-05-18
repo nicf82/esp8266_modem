@@ -18,7 +18,7 @@ Some wire for wiring things together.
 
 On your modern computer you need:
 The Arduino IDE: https://www.arduino.cc/en/Main/Software
-The source for the firmware (I'll be updating this for hardware flow control at some point, and tweaking it as I test it, it's already had a bit of a tweak): https://github.com/stardot/esp8266_modem
+The source for the firmware. If you wish to compile it with hardware flow (RTS/CTS), make sure you've got access to GPIO pins 13/15 of the ESP8266 and adjust the #defines in the source.  Ensure RTS/CTS are hooked up appropriately to your terminal.
 
 On the beeb you need:
 Commstar 1.4
