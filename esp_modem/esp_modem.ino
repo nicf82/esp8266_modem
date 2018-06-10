@@ -1,27 +1,28 @@
 /*
- * ESP8266 based virtual modem
- * Copyright (C) 2016 Jussi Salin <salinjus@gmail.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+   ESP8266 based virtual modem
+   Copyright (C) 2016 Jussi Salin <salinjus@gmail.com>
+
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include <ESP8266WiFi.h>
 #include <algorithm>
 
 //#defines
 
-#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control
+#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - off by default, uncomment this line to use and then
+//#undef USE_HW_FLOW_CTRL      // comment out this line!
 
 #ifdef USE_HW_FLOW_CTRL
 #include <uart_register.h>
@@ -32,20 +33,20 @@
 #undef DEBUG
 #undef USE_SWITCH
 #define SWITCH_PIN 0       // GPIO0 (programmind mode pin)
-#define DEFAULT_BPS 2400 // 2400 safe for all old computers including C64
+#define DEFAULT_BPS 2400   // 2400 safe for all old computers including C64
 #define LISTEN_PORT 23     // Listen to this if not connected. Set to zero to disable.
 #define RING_INTERVAL 3000 // How often to print RING when having a new incoming connection (ms)
 #define MAX_CMD_LENGTH 256 // Maximum length for AT command
 #define LED_PIN 2          // Status LED
 #define LED_TIME 1         // How many ms to keep LED on at activity
 #define TX_BUF_SIZE 256    // Buffer where to read from serial before writing to TCP
-                           // (that direction is very blocking by the ESP TCP stack,
-                           // so we can't do one byte a time.)
+// (that direction is very blocking by the ESP TCP stack,
+// so we can't do one byte a time.)
 // Telnet codes
 #define DO 0xfd
 #define WONT 0xfc
 #define WILL 0xfb
-#define DONT 0xfe                           
+#define DONT 0xfe
 
 // Global variables
 
@@ -56,7 +57,7 @@ String cmd = "";           // Gather a new AT command to this string from serial
 bool cmdMode = true;       // Are we in AT command mode or connected mode
 bool telnet = true;        // Is telnet control code handling enabled
 
-unsigned long lastRingMs=0;// Time of last "RING" message (millis())
+unsigned long lastRingMs = 0; // Time of last "RING" message (millis())
 long myBps;                // What is the current BPS setting
 char plusCount = 0;        // Go to AT mode at "+++" sequence, that has to be counted
 unsigned long plusTime = 0;// When did we last receive a "+++" sequence
@@ -65,8 +66,8 @@ uint8_t txBuf[TX_BUF_SIZE]; // Transmit Buffer
 
 
 /**
- * Arduino main init function
- */
+   Arduino main init function
+*/
 void setup()
 {
   Serial.begin(DEFAULT_BPS);
@@ -122,8 +123,8 @@ void setup()
 }
 
 /**
- * Turn on the LED and store the time, so the LED will be shortly after turned off
- */
+   Turn on the LED and store the time, so the LED will be shortly after turned off
+*/
 void led_on(void)
 {
   digitalWrite(LED_PIN, LOW);
@@ -131,8 +132,8 @@ void led_on(void)
 }
 
 /**
- * Perform a command given in command mode
- */
+   Perform a command given in command mode
+*/
 void command()
 {
   cmd.trim();
@@ -145,7 +146,7 @@ void command()
 
   /**** Just AT ****/
   if (upCmd == "AT") Serial.println("OK");
-  
+
   /**** Dial to host ****/
   else if ((upCmd.indexOf("ATDT") == 0) || (upCmd.indexOf("ATDP") == 0) || (upCmd.indexOf("ATDI") == 0))
   {
@@ -209,7 +210,7 @@ void command()
     Serial.print("/");
     Serial.println(key);
     WiFi.begin(ssidChr, keyChr);
-    for (int i=0; i<100; i++)
+    for (int i = 0; i < 100; i++)
     {
       delay(100);
       if (WiFi.status() == WL_CONNECTED)
@@ -287,7 +288,7 @@ void command()
     }
     else
     {
-      port = cmd.substring(portIndex+1, pathIndex).toInt();
+      port = cmd.substring(portIndex + 1, pathIndex).toInt();
     }
     host = cmd.substring(12, portIndex);
     path = cmd.substring(pathIndex, cmd.length());
@@ -335,6 +336,21 @@ void command()
     Serial.println("OK");
     delay(150); // Sleep enough for 4 bytes at any previous baud rate to finish ("\nOK\n")
     Serial.begin(newBps);
+#ifdef USE_HW_FLOW_CTRL
+    // Enable flow control of Beeb -> ESP8266 data with RTS
+    // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
+    // RTS on the ESP8266 is an output and should be connected to CTS on the RS423
+    // The ESP8266 has a 128 byte receive buffer, so a threshold of 64 is half full
+    pinMode(15, FUNCTION_4); // make pin U0CTS
+    SET_PERI_REG_BITS(UART_CONF1(0), UART_RX_FLOW_THRHD, 64, UART_RX_FLOW_THRHD_S);
+    SET_PERI_REG_MASK(UART_CONF1(0), UART_RX_FLOW_EN);
+
+    // Enable flow control of ESP8266 -> Beeb data with CTS
+    // CTS on the EPS8266 is pin GPIO13 which is physical pin 7
+    // CTS on the ESP8266 is an input and should be connected to RTS on the RS423
+    pinMode(13, FUNCTION_4); // make pin U0CTS
+    SET_PERI_REG_MASK(UART_CONF0(0), UART_TX_FLOW_EN);
+#endif
     myBps = newBps;
   }
 
@@ -342,8 +358,8 @@ void command()
 }
 
 /**
- * Arduino main loop function
- */     
+   Arduino main loop function
+*/
 void loop()
 {
   /**** AT command mode ****/
@@ -359,14 +375,14 @@ void loop()
         lastRingMs = millis();
       }
     }
-    
+
     // In command mode - don't exchange with TCP but gather characters to a string
     if (Serial.available())
     {
       char chr = Serial.read();
 
       // Return, enter, new line, carriage return.. anything goes to end the command
-      if ((chr == '\n') || (chr == '\r')) 
+      if ((chr == '\n') || (chr == '\r'))
       {
         command();
       }
@@ -407,9 +423,9 @@ void loop()
       // maximum size of the buffer
       size_t len = std::min(Serial.available(), max_buf_size);
       Serial.readBytes(&txBuf[0], len);
-      
+
       // Disconnect if going to AT mode with "+++" sequence
-      for (int i=0; i<(int)len; i++)
+      for (int i = 0; i < (int)len; i++)
       {
         if (txBuf[i] == '+') plusCount++; else plusCount = 0;
         if (plusCount >= 3)
@@ -445,7 +461,7 @@ void loop()
     }
 
     // Transmit from TCP to terminal
-    while (tcpClient.available()) 
+    while (tcpClient.available())
     {
       led_on();
       uint8_t rxByte = tcpClient.read();
@@ -453,9 +469,9 @@ void loop()
       // Is a telnet control code starting?
       if ((telnet == true) && (rxByte == 0xff))
       {
-        #ifdef DEBUG
+#ifdef DEBUG
         Serial.print("<t>");
-        #endif
+#endif
         rxByte = tcpClient.read();
         if (rxByte == 0xff)
         {
@@ -465,37 +481,37 @@ void loop()
         else
         {
           // rxByte has now the first byte of the actual non-escaped control code
-          #ifdef DEBUG
+#ifdef DEBUG
           Serial.print(rxByte);
           Serial.print(",");
-          #endif
+#endif
           uint8_t cmdByte1 = rxByte;
           rxByte = tcpClient.read();
           uint8_t cmdByte2 = rxByte;
           // rxByte has now the second byte of the actual non-escaped control code
-          #ifdef DEBUG
+#ifdef DEBUG
           Serial.print(rxByte); Serial.flush();
-          #endif
+#endif
           // We are asked to do some option, respond we won't
-          if (cmdByte1 == DO) 
+          if (cmdByte1 == DO)
           {
             tcpClient.write((uint8_t)255); tcpClient.write((uint8_t)WONT); tcpClient.write(cmdByte2);
           }
           // Server wants to do any option, allow it
-          else if (cmdByte1 == WILL) 
+          else if (cmdByte1 == WILL)
           {
             tcpClient.write((uint8_t)255); tcpClient.write((uint8_t)DO); tcpClient.write(cmdByte2);
           }
         }
-        #ifdef DEBUG
+#ifdef DEBUG
         Serial.print("</t>");
-        #endif
+#endif
       }
       else
       {
         // Non-control codes pass through freely
-        Serial.write(rxByte); 
-        delay(1);
+        Serial.write(rxByte);
+        yield();
         Serial.flush();
       }
     }
