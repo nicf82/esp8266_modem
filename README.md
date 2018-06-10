@@ -5,6 +5,8 @@ Schematic Copyright (C) 2018 Daniel Jameson <djameson@gmail.com>
 PCB Copyright (C) 2018 Daniel Jameson <djameson@gmail.com>
 Schematic and PCB released under Creative Commons Attribution-ShareAlike 4.0 License: https://creativecommons.org/licenses/by-sa/4.0/legalcode
 
+FreeFi232 is UNTESTED!
+
 Firmware Copyright (C) 2015 Jussi Salin <salinjus@gmail.com> under GPLv3 license.
 Additions Copyright (C) 2018 Daniel Jameson <djameson@gmail.com> and Stardot contributers under GPLv3 license.
 
