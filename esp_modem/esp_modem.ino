@@ -21,8 +21,8 @@
 
 //#defines
 
-//#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - off by default, uncomment this line to use and then
-#undef USE_HW_FLOW_CTRL      // comment out this line!
+#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - off by default, uncomment this line to use and then
+//#undef USE_HW_FLOW_CTRL      // comment out this line!
 #ifdef USE_HW_FLOW_CTRL
 #include <uart_register.h>
 #endif
@@ -131,16 +131,11 @@ void setup()
   Serial.println();
   Serial.print("DTR:");
   Serial.println(digitalRead(ESP_DTR));
+  digitalWrite(ESP_DSR, 0);
+  digitalWrite(ESP_DCD, 1);
+  digitalWrite(ESP_RING, 1);
 
-  if (hwFlowOff == 0) {
-    digitalWrite(ESP_RING, 0);
-    digitalWrite(ESP_DCD, 1);
-    digitalWrite(ESP_DSR, 1);
-  } else {
-    digitalWrite(ESP_RING, 1);
-    digitalWrite(ESP_DCD, 0);
-    digitalWrite(ESP_DSR, 0);
-  }
+
   if (LISTEN_PORT > 0)
   {
     Serial.print("Listening to connections at port ");
@@ -211,6 +206,7 @@ void command()
     {
       tcpClient.setNoDelay(true); // Try to disable naggle
       Serial.print("CONNECT ");
+      digitalWrite(ESP_DCD,0);
       Serial.println(myBps);
       cmdMode = false;
       Serial.flush();
@@ -219,6 +215,7 @@ void command()
     else
     {
       Serial.println("NO CARRIER");
+      digitalWrite(ESP_DCD,1);
     }
     delete hostChr;
   }
@@ -292,6 +289,7 @@ void command()
     tcpClient = tcpServer.available();
     tcpClient.setNoDelay(true); // try to disable naggle
     tcpServer.stop();
+    digitalWrite(ESP_RING, 1);
     Serial.print("CONNECT ");
     Serial.println(myBps);
     cmdMode = false;
@@ -346,10 +344,12 @@ void command()
     if (!tcpClient.connect(hostChr, port))
     {
       Serial.println("NO CARRIER");
+      digitalWrite(ESP_DCD,1);
     }
     else
     {
       Serial.print("CONNECT ");
+      digitalWrite(ESP_DCD,0);
       Serial.println(myBps);
       cmdMode = false;
 
@@ -411,10 +411,13 @@ void loop()
       if ((millis() - lastRingMs) > RING_INTERVAL)
       {
         Serial.println("RING");
+        digitalWrite(ESP_RING,0);
         lastRingMs = millis();
       }
+    } else {
+      digitalWrite(ESP_RING,1);
     }
-
+ 
     // In command mode - don't exchange with TCP but gather characters to a string
     if (Serial.available())
     {
@@ -580,6 +583,7 @@ void loop()
   {
     cmdMode = true;
     Serial.println("NO CARRIER");
+    digitalWrite(ESP_DCD,1);
     if (LISTEN_PORT > 0) tcpServer.begin();
   }
 
