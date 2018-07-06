@@ -21,9 +21,8 @@
 
 //#defines
 
-#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - off by default, uncomment this line to use and then
-//#undef USE_HW_FLOW_CTRL      // comment out this line!
-
+//#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - off by default, uncomment this line to use and then
+#undef USE_HW_FLOW_CTRL      // comment out this line!
 #ifdef USE_HW_FLOW_CTRL
 #include <uart_register.h>
 #endif
@@ -48,6 +47,17 @@
 #define WILL 0xfb
 #define DONT 0xfe
 
+//ESP8266 pins
+#define HW_FLOW_SELECT 16 //high=off, low=on
+#define ESP_RTS 15
+#define ESP_CTS 13
+#define ESP_RING 2 //output
+#define ESP_DSR 4  //output
+#define ESP_DTR 14 //input
+#define ESP_DCD 5  //output
+
+
+
 // Global variables
 
 WiFiClient tcpClient;
@@ -64,6 +74,8 @@ unsigned long plusTime = 0;// When did we last receive a "+++" sequence
 unsigned long ledTime = 0; // Counter for LED flashing
 uint8_t txBuf[TX_BUF_SIZE]; // Transmit Buffer
 
+int hwFlowOff = 10;
+
 
 /**
    Arduino main init function
@@ -78,21 +90,28 @@ void setup()
   // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
   // RTS on the ESP8266 is an output and should be connected to CTS on the RS423
   // The ESP8266 has a 128 byte receive buffer, so a threshold of 64 is half full
-  pinMode(15, FUNCTION_4); // make pin U0CTS
+  pinMode(ESP_RTS, FUNCTION_4); // make pin U0CTS
   SET_PERI_REG_BITS(UART_CONF1(0), UART_RX_FLOW_THRHD, 64, UART_RX_FLOW_THRHD_S);
   SET_PERI_REG_MASK(UART_CONF1(0), UART_RX_FLOW_EN);
 
   // Enable flow control of ESP8266 -> Beeb data with CTS
   // CTS on the EPS8266 is pin GPIO13 which is physical pin 7
   // CTS on the ESP8266 is an input and should be connected to RTS on the RS423
-  pinMode(13, FUNCTION_4); // make pin U0CTS
+  pinMode(ESP_CTS, FUNCTION_4); // make pin U0CTS
   SET_PERI_REG_MASK(UART_CONF0(0), UART_TX_FLOW_EN);
 #endif
 
-#ifdef USE_SWITCH
-  pinMode(SWITCH_PIN, INPUT);
-  digitalWrite(SWITCH_PIN, HIGH);
-#endif
+  pinMode(HW_FLOW_SELECT, INPUT);
+  pinMode(ESP_RING, OUTPUT);
+  pinMode(ESP_DCD, OUTPUT);
+  pinMode(ESP_DSR, OUTPUT);
+  pinMode(ESP_DTR, INPUT);
+
+  digitalWrite(ESP_RING, 0);
+  digitalWrite(ESP_DCD,1);
+  digitalWrite(ESP_DSR,1);
+
+  hwFlowOff=digitalRead(HW_FLOW_SELECT);
 
   Serial.println("Virtual modem");
   Serial.println("=============");
@@ -104,6 +123,21 @@ void setup()
   Serial.println("Disable telnet command handling: ATNET0");
   Serial.println("HTTP GET: ATGET<URL>");
   Serial.println();
+  Serial.print("HW-FLOW:");
+  Serial.println(hwFlowOff);
+  Serial.println();
+  Serial.print("DTR:");
+  Serial.println(digitalRead(ESP_DTR));
+  
+  if (hwFlowOff==0) {
+      digitalWrite(ESP_RING, 0);
+      digitalWrite(ESP_DCD,1);
+      digitalWrite(ESP_DSR,1);
+  } else {
+          digitalWrite(ESP_RING, 1);
+      digitalWrite(ESP_DCD,0);
+      digitalWrite(ESP_DSR,0);
+  }
   if (LISTEN_PORT > 0)
   {
     Serial.print("Listening to connections at port ");
