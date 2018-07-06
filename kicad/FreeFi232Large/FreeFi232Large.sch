@@ -37,8 +37,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "FreeFi232 WiFi Modem"
-Date "2018-07-04"
-Rev "2.2"
+Date "2018-07-06"
+Rev "2.4"
 Comp "(c) 2018 Daniel Jameson"
 Comment1 "License: CC-BY-SA 4.0"
 Comment2 ""
@@ -62,7 +62,7 @@ U 1 1 5AF70FC2
 P 9150 3450
 F 0 "J4" H 8950 3900 50  0000 L CNN
 F 1 "USB_OTG" H 8950 3800 50  0000 L CNN
-F 2 "Connectors:USB_Micro-B" H 9300 3400 50  0001 C CNN
+F 2 "Connectors_USB:USB_Micro-B_Molex-105017-0001" H 9300 3400 50  0001 C CNN
 F 3 "" H 9300 3400 50  0001 C CNN
 	1    9150 3450
 	1    0    0    -1  
@@ -207,7 +207,7 @@ F 3 "" H 1250 2600 50  0001 C CNN
 $EndComp
 Text GLabel 7700 2000 2    60   Input ~ 0
 GPIO15
-Text GLabel 5000 2000 0    60   Input ~ 0
+Text GLabel 4550 2000 0    60   Input ~ 0
 GPIO13
 Text GLabel 7700 1800 2    60   Input ~ 0
 iDTR
@@ -438,7 +438,7 @@ NoConn ~ 5900 2600
 NoConn ~ 6000 2600
 NoConn ~ 6200 2600
 NoConn ~ 6300 2600
-NoConn ~ 5150 1900
+NoConn ~ 6950 1900
 NoConn ~ 5150 1500
 $Comp
 L GND #PWR016
@@ -639,7 +639,7 @@ Wire Wire Line
 Wire Wire Line
 	9400 1950 9650 1950
 Wire Wire Line
-	9650 1950 9650 1750
+	9650 1750 9650 2150
 Wire Wire Line
 	6550 3000 6700 3000
 Wire Wire Line
@@ -679,9 +679,9 @@ Wire Wire Line
 Wire Wire Line
 	1550 2600 2300 2600
 Wire Wire Line
-	2300 3800 2300 2600
+	2300 2600 2300 3800
 Wire Wire Line
-	1550 3800 2300 3800
+	2300 3800 1550 3800
 Wire Wire Line
 	1700 3800 1700 3950
 Connection ~ 1700 3800
@@ -699,8 +699,6 @@ Wire Wire Line
 	9050 5400 9050 5500
 Connection ~ 8400 5400
 Connection ~ 9800 2750
-Wire Wire Line
-	5000 2000 5150 2000
 NoConn ~ 6100 2600
 $Comp
 L MAX3237 U1
@@ -780,16 +778,14 @@ Text GLabel 7000 1600 2    60   Input ~ 0
 GPIO5
 Text GLabel 7350 1700 2    60   Input ~ 0
 GPIO4
-Text GLabel 7000 1900 2    60   Input ~ 0
-GPIO2
+Text GLabel 5000 1900 0    60   Input ~ 0
+GPIO12
 Wire Wire Line
 	6950 1600 7000 1600
 Wire Wire Line
 	6950 1700 7350 1700
-Wire Wire Line
-	6950 1900 7000 1900
 Text GLabel 5550 4550 2    60   Input ~ 0
-GPIO2
+GPIO12
 Text GLabel 5550 4750 2    60   Input ~ 0
 GPIO4
 Text GLabel 5550 4950 2    60   Input ~ 0
@@ -950,4 +946,26 @@ Text GLabel 5550 5150 2    60   Input ~ 0
 GPIO14
 Wire Wire Line
 	4550 1800 5150 1800
+Wire Wire Line
+	4550 2000 5150 2000
+Wire Wire Line
+	5000 1900 5150 1900
+Text GLabel 8950 2150 0    60   Input ~ 0
+RXD0
+$Comp
+L R R2
+U 1 1 5B3FC61E
+P 9250 2150
+F 0 "R2" V 9330 2150 50  0000 C CNN
+F 1 "10K" V 9250 2150 50  0000 C CNN
+F 2 "Resistors_SMD:R_0805" V 9180 2150 50  0001 C CNN
+F 3 "" H 9250 2150 50  0001 C CNN
+	1    9250 2150
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	8950 2150 9100 2150
+Wire Wire Line
+	9650 2150 9400 2150
+Connection ~ 9650 1950
 $EndSCHEMATC
