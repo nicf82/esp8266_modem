@@ -1,6 +1,7 @@
 /*
    ESP8266 based virtual modem
-   Copyright (C) 2016 Jussi Salin <salinjus@gmail.com>
+   Original Source Copyright (C) 2016 Jussi Salin <salinjus@gmail.com>
+   Additions (C) 2018 Daniel Jameson, Stardot Contributors
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,17 +22,14 @@
 
 //#defines
 
-#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - off by default, uncomment this line to use and then
-//#undef USE_HW_FLOW_CTRL      // comment out this line!
+#define USE_HW_FLOW_CTRL   // Use hardware (RTS/CTS) flow control - controlled by HW_FLOW_SELECT GPIO being pulled LOW.
+//#undef USE_HW_FLOW_CTRL      // comment out line above to disable HW flow and uncomment this one.
 #ifdef USE_HW_FLOW_CTRL
 #include <uart_register.h>
 #endif
 
-//#define USE_SWITCH 1     // Use a   ware reset switch
 //#define DEBUG 1          // Print additional debug information to serial channel
 #undef DEBUG
-#undef USE_SWITCH
-#define SWITCH_PIN 0       // GPIO0 (programmind mode pin)
 #define DEFAULT_BPS 2400   // 2400 safe for all old computers including C64
 #define LISTEN_PORT 23     // Listen to this if not connected. Set to zero to disable.
 #define RING_INTERVAL 3000 // How often to print RING when having a new incoming connection (ms)
@@ -92,49 +90,15 @@ void setup()
   hwFlowOff = digitalRead(HW_FLOW_SELECT);
 #ifdef USE_HW_FLOW_CTRL
   if (hwFlowOff == 0) {
-    // Enable flow control of Beeb -> ESP8266 data with RTS
-    // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
-    // RTS on the ESP8266 is an output and should be connected to CTS on the RS423
-    // The ESP8266 has a 128 byte receive buffer, so a threshold of 64 is half full
-    pinMode(ESP_RTS, FUNCTION_4); // make pin U0CTS
-    SET_PERI_REG_BITS(UART_CONF1(0), UART_RX_FLOW_THRHD, 64, UART_RX_FLOW_THRHD_S);
-    SET_PERI_REG_MASK(UART_CONF1(0), UART_RX_FLOW_EN);
-
-    // Enable flow control of ESP8266 -> Beeb data with CTS
-    // CTS on the EPS8266 is pin GPIO13 which is physical pin 7
-    // CTS on the ESP8266 is an input and should be connected to RTS on the RS423
-    pinMode(ESP_CTS, FUNCTION_4); // make pin U0CTS
-    SET_PERI_REG_MASK(UART_CONF0(0), UART_TX_FLOW_EN);
+    setHardwareFlow();
   }
 #endif
 
+  helpMessage();
 
-
-  digitalWrite(ESP_RING, 0);
-  digitalWrite(ESP_DCD, 1);
-  digitalWrite(ESP_DSR, 1);
-
-
-
-  Serial.println("Virtual modem");
-  Serial.println("=============");
-  Serial.println();
-  Serial.println("Connect to WIFI: ATWIFI<ssid>,<key>");
-  Serial.println("Change terminal baud rate: AT<baud>");
-  Serial.println("Connect by TCP: ATDT<host>:<port>");
-  Serial.println("See my IP address: ATIP");
-  Serial.println("Disable telnet command handling: ATNET0");
-  Serial.println("HTTP GET: ATGET<URL>");
-  Serial.println();
-  Serial.print("HW-FLOW:");
-  Serial.println(hwFlowOff);
-  Serial.println();
-  Serial.print("DTR:");
-  Serial.println(digitalRead(ESP_DTR));
-  digitalWrite(ESP_DSR, 0);
-  digitalWrite(ESP_DCD, 1);
-  digitalWrite(ESP_RING, 1);
-
+  digitalWrite(ESP_RING, HIGH); // Phone not ringing
+  digitalWrite(ESP_DCD, HIGH);  // We're not connected to an external host
+  digitalWrite(ESP_DSR, LOW);   // We are happy to talk though!
 
   if (LISTEN_PORT > 0)
   {
@@ -152,6 +116,43 @@ void setup()
 
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
+}
+
+
+void setHardwareFlow() {
+  // Enable flow control of Beeb -> ESP8266 data with RTS
+  // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
+  // RTS on the ESP8266 is an output and should be connected to CTS on the RS423
+  // The ESP8266 has a 128 byte receive buffer, so a threshold of 64 is half full
+  pinMode(ESP_RTS, FUNCTION_4); // make pin U0RTS
+  SET_PERI_REG_BITS(UART_CONF1(0), UART_RX_FLOW_THRHD, 64, UART_RX_FLOW_THRHD_S);
+  SET_PERI_REG_MASK(UART_CONF1(0), UART_RX_FLOW_EN);
+
+  // Enable flow control of ESP8266 -> Beeb data with CTS
+  // CTS on the EPS8266 is pin GPIO13 which is physical pin 7
+  // CTS on the ESP8266 is an input and should be connected to RTS on the RS423
+  pinMode(ESP_CTS, FUNCTION_4); // make pin U0CTS
+  SET_PERI_REG_MASK(UART_CONF0(0), UART_TX_FLOW_EN);
+}
+
+void helpMessage()
+{
+  Serial.println("Virtual modem");
+  Serial.println("=============");
+  Serial.println();
+  Serial.println("Connect to WIFI: ATWIFI<ssid>,<key>");
+  Serial.println("Change terminal baud rate: AT<baud>");
+  Serial.println("Connect by TCP: ATDT<host>:<port>");
+  Serial.println("See my IP address: ATIP");
+  Serial.println("Disable telnet command handling: ATNET0");
+  Serial.println("HTTP GET: ATGET<URL>");
+  Serial.println();
+  Serial.print("HW-FLOW:");
+  Serial.println(hwFlowOff);
+  Serial.println();
+  Serial.print("DTR:");
+  Serial.println(digitalRead(ESP_DTR));
+
 }
 
 /**
@@ -178,6 +179,9 @@ void command()
 
   /**** Just AT ****/
   if (upCmd == "AT") Serial.println("OK");
+
+  /**** Help message ****/
+  else if (upCmd == "ATHELP") helpMessage();
 
   /**** Dial to host ****/
   else if ((upCmd.indexOf("ATDT") == 0) || (upCmd.indexOf("ATDP") == 0) || (upCmd.indexOf("ATDI") == 0))
@@ -206,7 +210,7 @@ void command()
     {
       tcpClient.setNoDelay(true); // Try to disable naggle
       Serial.print("CONNECT ");
-      digitalWrite(ESP_DCD,0);
+      digitalWrite(ESP_DCD, LOW);
       Serial.println(myBps);
       cmdMode = false;
       Serial.flush();
@@ -215,7 +219,7 @@ void command()
     else
     {
       Serial.println("NO CARRIER");
-      digitalWrite(ESP_DCD,1);
+      digitalWrite(ESP_DCD, HIGH);
     }
     delete hostChr;
   }
@@ -289,8 +293,9 @@ void command()
     tcpClient = tcpServer.available();
     tcpClient.setNoDelay(true); // try to disable naggle
     tcpServer.stop();
-    digitalWrite(ESP_RING, 1);
+    digitalWrite(ESP_RING, HIGH); // we've picked up so ringing stops
     Serial.print("CONNECT ");
+    digitalWrite(ESP_DCD, LOW); // we've got a carrier signal
     Serial.println(myBps);
     cmdMode = false;
     Serial.flush();
@@ -344,12 +349,12 @@ void command()
     if (!tcpClient.connect(hostChr, port))
     {
       Serial.println("NO CARRIER");
-      digitalWrite(ESP_DCD,1);
+      digitalWrite(ESP_DCD, 1);
     }
     else
     {
       Serial.print("CONNECT ");
-      digitalWrite(ESP_DCD,0);
+      digitalWrite(ESP_DCD, 0);
       Serial.println(myBps);
       cmdMode = false;
 
@@ -375,19 +380,7 @@ void command()
     Serial.begin(newBps);
 #ifdef USE_HW_FLOW_CTRL
     if (hwFlowOff == 0) {
-      // Enable flow control of Beeb -> ESP8266 data with RTS
-      // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
-      // RTS on the ESP8266 is an output and should be connected to CTS on the RS423
-      // The ESP8266 has a 128 byte receive buffer, so a threshold of 64 is half full
-      pinMode(ESP_RTS, FUNCTION_4); // make pin U0CTS
-      SET_PERI_REG_BITS(UART_CONF1(0), UART_RX_FLOW_THRHD, 64, UART_RX_FLOW_THRHD_S);
-      SET_PERI_REG_MASK(UART_CONF1(0), UART_RX_FLOW_EN);
-
-      // Enable flow control of ESP8266 -> Beeb data with CTS
-      // CTS on the EPS8266 is pin GPIO13 which is physical pin 7
-      // CTS on the ESP8266 is an input and should be connected to RTS on the RS423
-      pinMode(ESP_CTS, FUNCTION_4); // make pin U0CTS
-      SET_PERI_REG_MASK(UART_CONF0(0), UART_TX_FLOW_EN);
+      setHardwareFlow();
     }
 #endif
     myBps = newBps;
@@ -411,13 +404,13 @@ void loop()
       if ((millis() - lastRingMs) > RING_INTERVAL)
       {
         Serial.println("RING");
-        digitalWrite(ESP_RING,0);
+        digitalWrite(ESP_RING, LOW); //Someone's trying to call
         lastRingMs = millis();
       }
     } else {
-      digitalWrite(ESP_RING,1);
+      digitalWrite(ESP_RING, HIGH); //Someone's not trying to call
     }
- 
+
     // In command mode - don't exchange with TCP but gather characters to a string
     if (Serial.available())
     {
@@ -560,12 +553,7 @@ void loop()
   }
 
   // Disconnect if programming mode PIN (GPIO0) is switched to GND
-#ifdef USE_SWITCH
-  if ((tcpClient.connected()) && (digitalRead(SWITCH_PIN) == LOW))
-  {
-    tcpClient.stop();
-  }
-#endif
+
 
   // If we have received "+++" as last bytes from serial port and there
   // has been over a second without any more bytes, disconnect
@@ -583,7 +571,7 @@ void loop()
   {
     cmdMode = true;
     Serial.println("NO CARRIER");
-    digitalWrite(ESP_DCD,1);
+    digitalWrite(ESP_DCD, HIGH); //We're disconnected from carrier
     if (LISTEN_PORT > 0) tcpServer.begin();
   }
 
