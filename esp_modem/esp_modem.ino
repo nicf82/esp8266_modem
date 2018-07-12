@@ -19,6 +19,7 @@
 
 #include <ESP8266WiFi.h>
 #include <algorithm>
+#include <ESP_EEPROM.h>
 
 //#defines
 
@@ -121,7 +122,7 @@ void setup()
 
 
 void setHardwareFlow() {
-  // Enable flow control of Beeb -> ESP8266 data with RTS
+  // Enable flow control of DTE -> ESP8266 data with RTS
   // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
   // RTS on the ESP8266 is an output and should be connected to CTS on the RS423
   // The ESP8266 has a 128 byte receive buffer, so a threshold of 64 is half full
@@ -129,7 +130,7 @@ void setHardwareFlow() {
   SET_PERI_REG_BITS(UART_CONF1(0), UART_RX_FLOW_THRHD, 64, UART_RX_FLOW_THRHD_S);
   SET_PERI_REG_MASK(UART_CONF1(0), UART_RX_FLOW_EN);
 
-  // Enable flow control of ESP8266 -> Beeb data with CTS
+  // Enable flow control of ESP8266 -> DTE data with CTS
   // CTS on the EPS8266 is pin GPIO13 which is physical pin 7
   // CTS on the ESP8266 is an input and should be connected to RTS on the RS423
   pinMode(ESP_CTS, FUNCTION_4); // make pin U0CTS
@@ -138,8 +139,9 @@ void setHardwareFlow() {
 
 void helpMessage()
 {
-  Serial.println("Virtual modem");
-  Serial.println("=============");
+  Serial.println("FreeFi232 Firmware v0.2");
+  Serial.println("=======================\n");
+  Serial.println("Based on ESP8266 Virtual Modem (C) 2016 Jussi Salin");
   Serial.println();
   Serial.println("Connect to WIFI: ATWIFI<ssid>,<key>");
   Serial.println("Change terminal baud rate: AT<baud>");
@@ -147,6 +149,8 @@ void helpMessage()
   Serial.println("See my IP address: ATIP");
   Serial.println("Disable telnet command handling: ATNET0");
   Serial.println("HTTP GET: ATGET<URL>");
+  Serial.print("MAC:");
+  Serial.println(WiFi.macAddress());
   Serial.println();
   Serial.print("HW-FLOW:");
   Serial.println(hwFlowOff);

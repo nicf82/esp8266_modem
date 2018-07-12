@@ -227,6 +227,11 @@ void command()
     dacomMode=true;
   }
 
+  /**** Print help mesage ****/
+  else if (upCmd.indexOf("ATHELP") == 0) {
+    helpMessage();
+  }
+
   /**** Unknown command ****/
   else Serial.println("ERROR");
 
