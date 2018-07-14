@@ -225,6 +225,8 @@ void command()
   /**** Place modem in DACOM mode ****/
   else if (upCmd.indexOf("ATDACOM") == 0) {
     dacomMode=true;
+    Serial.println("DaCom Mode Activated - changing to 1200-8N1");
+    newBps=1200;
   }
 
   /**** Print help mesage ****/
@@ -248,6 +250,5 @@ void command()
 #endif
     myBps = newBps;
   }
-
   cmd = "";
 }

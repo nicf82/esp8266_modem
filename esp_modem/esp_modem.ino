@@ -66,15 +66,18 @@ String cmd = "";           // Gather a new AT command to this string from serial
 bool cmdMode = true;       // Are we in AT command mode or connected mode
 bool dacomMode = false;    // Are we in DACOM compatible mode?
 bool telnet = true;        // Is telnet control code handling enabled
+bool dacomAutoAnswer = false; // are we looking to auto-answer in dacom mode?
 
 unsigned long lastRingMs = 0; // Time of last "RING" message (millis())
 long myBps;                // What is the current BPS setting
 char plusCount = 0;        // Go to AT mode at "+++" sequence, that has to be counted
+char ctrlACount = 0;       // Go to DaCom command mode with 4xCTRL-A
 unsigned long plusTime = 0;// When did we last receive a "+++" sequence
+unsigned long ctrlATime = 0; //When did we last receive a 4xCTRL-A sequence?
 unsigned long ledTime = 0; // Counter for LED flashing
 uint8_t txBuf[TX_BUF_SIZE]; // Transmit Buffer
 
-int hwFlowOff = 10;
+int hwFlowOff = 0;
 
 
 /**
@@ -142,7 +145,7 @@ void helpMessage()
   Serial.println("FreeFi232 Firmware v0.2");
   Serial.println("=======================\n");
   Serial.println("Based on ESP8266 Virtual Modem (C) 2016 Jussi Salin");
-  Serial.println();
+  Serial.println("Additions (C) 2018 Daniel Jameson and Stardot Contributors");
   Serial.println("Connect to WIFI: ATWIFI<ssid>,<key>");
   Serial.println("Change terminal baud rate: AT<baud>");
   Serial.println("Connect by TCP: ATDT<host>:<port>");
@@ -151,12 +154,13 @@ void helpMessage()
   Serial.println("HTTP GET: ATGET<URL>");
   Serial.print("MAC:");
   Serial.println(WiFi.macAddress());
+  Serial.print("Hardware Flow control: ");
+  if (hwFlowOff == 0) {
+    Serial.println("ON");
+  } else {
+    Serial.println("OFF");
+  }
   Serial.println();
-  Serial.print("HW-FLOW:");
-  Serial.println(hwFlowOff);
-  Serial.println();
-  Serial.print("DTR:");
-  Serial.println(digitalRead(ESP_DTR));
 
 }
 
@@ -185,9 +189,17 @@ void loop()
       // Print RING every now and then while the new incoming connection exists
       if ((millis() - lastRingMs) > RING_INTERVAL)
       {
-        Serial.println("RING");
+        if (dacomMode) {
+          Serial.println("RINGING");
+        }
+        else {
+          Serial.println("RING");
+        }
         digitalWrite(ESP_RING, LOW); //Someone's trying to call
         lastRingMs = millis();
+        if (dacomAutoAnswer) {
+          dacomAnswer(); // answer it if in auto answer mode for dacom
+        }
       }
     } else {
       digitalWrite(ESP_RING, HIGH); //Someone's not trying to call
@@ -201,7 +213,11 @@ void loop()
       // Return, enter, new line, carriage return.. anything goes to end the command
       if ((chr == '\n') || (chr == '\r'))
       {
-        command();
+        if (dacomMode) {
+          dacomCommand();
+        } else {
+          command();
+        }
       }
       // Backspace or delete deletes previous character
       else if ((chr == 8) || (chr == 127))
@@ -241,19 +257,17 @@ void loop()
       size_t len = std::min(Serial.available(), max_buf_size);
       Serial.readBytes(&txBuf[0], len);
 
-      // Disconnect if going to AT mode with "+++" sequence
+      // Disconnect if going to AT mode with "+++" sequence or DaCom mode with CTRL-A sequence
       for (int i = 0; i < (int)len; i++)
       {
         if (txBuf[i] == '+') plusCount++; else plusCount = 0;
-        if (plusCount >= 3)
-        {
-          plusTime = millis();
-        }
-        if (txBuf[i] != '+')
-        {
-          plusCount = 0;
-        }
+        if (txBuf[i] == 1) ctrlACount++; else ctrlACount = 0;
+        if (plusCount >= 3) plusTime = millis();
+        if (ctrlACount >= 4) ctrlATime = millis();
+        if (txBuf[i] != '+') plusCount = 0;
+        if (txBuf[i] != 1) ctrlACount = 0;
       }
+
 
       // Double (escape) every 0xff for telnet, shifting the following bytes
       // towards the end of the buffer from that point
@@ -337,7 +351,7 @@ void loop()
 
   // If we have received "+++" as last bytes from serial port and there
   // has been over a second without any more bytes, disconnect
-  if (plusCount >= 3)
+  if (plusCount >= 3 && !dacomMode)
   {
     if (millis() - plusTime > 1000)
     {
@@ -346,11 +360,24 @@ void loop()
     }
   }
 
+  if (ctrlACount >= 4 && dacomMode)
+  {
+    if (millis() - ctrlATime > 1000)
+    {
+      tcpClient.stop();
+      ctrlACount = 0;
+    }
+  }
+
   // Go to command mode if TCP disconnected and not in command mode
   if ((!tcpClient.connected()) && (cmdMode == false))
   {
     cmdMode = true;
-    Serial.println("NO CARRIER");
+    if (dacomMode) {
+      Serial.println("DISCONNECTED");
+    } else {
+      Serial.println("NO CARRIER");
+    }
     digitalWrite(ESP_DCD, HIGH); //We're disconnected from carrier
     if (LISTEN_PORT > 0) tcpServer.begin();
   }
