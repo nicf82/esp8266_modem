@@ -37,8 +37,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "FreeFi232 WiFi Modem"
-Date "2018-07-06"
-Rev "2.4"
+Date "2018-07-25"
+Rev "2.5"
 Comp "(c) 2018 Daniel Jameson"
 Comment1 "License: CC-BY-SA 4.0"
 Comment2 ""
@@ -382,7 +382,7 @@ TXD0
 Text GLabel 3450 5750 0    60   Input ~ 0
 Tx
 Text GLabel 5550 5750 2    60   Input ~ 0
-RXD0
+RXD0A
 Text GLabel 3450 5950 0    60   Input ~ 0
 Rx
 Text GLabel 5550 5350 2    60   Input ~ 0
@@ -953,7 +953,7 @@ L R R2
 U 1 1 5B3FC61E
 P 9250 2150
 F 0 "R2" V 9330 2150 50  0000 C CNN
-F 1 "10K" V 9250 2150 50  0000 C CNN
+F 1 "470R" V 9250 2150 50  0000 C CNN
 F 2 "Resistors_SMD:R_0805" V 9180 2150 50  0001 C CNN
 F 3 "" H 9250 2150 50  0001 C CNN
 	1    9250 2150
@@ -967,15 +967,6 @@ Wire Wire Line
 	9400 1950 9650 1950
 Wire Wire Line
 	9650 1950 9650 1750
-$Comp
-L GND #PWR?
-U 1 1 5B3FDC45
-P 9650 2150
-F 0 "#PWR?" H 9650 1900 50  0001 C CNN
-F 1 "GND" H 9650 2000 50  0000 C CNN
-F 2 "" H 9650 2150 50  0001 C CNN
-F 3 "" H 9650 2150 50  0001 C CNN
-	1    9650 2150
-	1    0    0    -1  
-$EndComp
+Text GLabel 9650 2150 2    60   Input ~ 0
+RXD0A
 $EndSCHEMATC
