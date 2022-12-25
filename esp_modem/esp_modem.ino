@@ -77,8 +77,9 @@ unsigned long ctrlATime = 0; //When did we last receive a 4xCTRL-A sequence?
 unsigned long ledTime = 0; // Counter for LED flashing
 uint8_t txBuf[TX_BUF_SIZE]; // Transmit Buffer
 
+#ifdef USE_HW_FLOW_CTRL
 int hwFlowOff = 0;
-
+#endif
 
 /**
    Arduino main init function
@@ -92,8 +93,8 @@ void setup()
   pinMode(ESP_DCD, OUTPUT);
   pinMode(ESP_DSR, OUTPUT);
   pinMode(ESP_DTR, INPUT);
-  hwFlowOff = digitalRead(HW_FLOW_SELECT);
 #ifdef USE_HW_FLOW_CTRL
+  hwFlowOff = digitalRead(HW_FLOW_SELECT);
   if (hwFlowOff == 0) {
     setHardwareFlow();
   }
@@ -123,7 +124,7 @@ void setup()
   digitalWrite(LED_PIN, HIGH);
 }
 
-
+#ifdef USE_HW_FLOW_CTRL
 void setHardwareFlow() {
   // Enable flow control of DTE -> ESP8266 data with RTS
   // RTS on the EPS8266 is pin GPIO15 which is physical pin 16
@@ -139,6 +140,7 @@ void setHardwareFlow() {
   pinMode(ESP_CTS, FUNCTION_4); // make pin U0CTS
   SET_PERI_REG_MASK(UART_CONF0(0), UART_TX_FLOW_EN);
 }
+#endif
 
 void helpMessage()
 {
@@ -154,6 +156,8 @@ void helpMessage()
   Serial.println("HTTP GET: ATGET<URL>");
   Serial.print("MAC:");
   Serial.println(WiFi.macAddress());
+ 
+  #ifdef USE_HW_FLOW_CTRL
   Serial.print("Hardware Flow control: ");
   if (hwFlowOff == 0) {
     Serial.println("ON");
@@ -161,7 +165,9 @@ void helpMessage()
     Serial.println("OFF");
   }
   Serial.println();
-
+  #else
+  Serial.println("Hardware Flow not compiled");
+  #endif
 }
 
 /**
